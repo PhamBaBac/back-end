@@ -1,0 +1,53 @@
+services:
+  # =========================================================================
+  # PostgreSQL with pgvector extension enabled for RAG product search
+  # =========================================================================
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: omniai_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${DB_USER:-omni_admin}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-omni_secret_pass}
+      POSTGRES_DB: ${DB_NAME:-omniai_seller_hub}
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-omni_admin} -d ${DB_NAME:-omniai_seller_hub}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - omniai_network
+
+  # =========================================================================
+  # Redis 7 for BullMQ background queues, token bucket rate-limiting & cache
+  # =========================================================================
+  redis:
+    image: redis:7-alpine
+    container_name: omniai_redis
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes", "--requirepass", "${REDIS_PASSWORD:-omni_redis_secret}"]
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-omni_redis_secret}", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - omniai_network
+
+networks:
+  omniai_network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local

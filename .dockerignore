@@ -1,0 +1,12 @@
+node_modules
+dist
+.git
+.github
+.agents
+.agent
+npm-debug.log
+.env
+.env.local
+.DS_Store
+coverage
+*.log
